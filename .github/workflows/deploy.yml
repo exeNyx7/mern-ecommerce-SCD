@@ -1,76 +1,76 @@
-name: Build and Deploy to Minikube
+# name: Build and Deploy to Minikube
 
-on:
-  push:
-    branches:
-      - main
+# on:
+#   push:
+#     branches:
+#       - main
 
-jobs:
-  build-deploy:
-    runs-on: self-hosted
+# jobs:
+#   build-deploy:
+#     runs-on: self-hosted
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v3
 
-    - name: Set up Docker to use Minikube's environment
-      shell: pwsh
-      run: |
-        Write-Host "Configuring Docker to use Minikube's daemon..."
-        $envScript = & (Get-Command minikube).Source -p minikube docker-env --shell powershell
-        Invoke-Expression $envScript
+#     - name: Set up Docker to use Minikube's environment
+#       shell: pwsh
+#       run: |
+#         Write-Host "Configuring Docker to use Minikube's daemon..."
+#         $envScript = & (Get-Command minikube).Source -p minikube docker-env --shell powershell
+#         Invoke-Expression $envScript
 
-    - name: Build Client Docker image
-      shell: pwsh
-      run: |
-        Set-Location "app/client"
-        docker build -t "${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest" .
+#     - name: Build Client Docker image
+#       shell: pwsh
+#       run: |
+#         Set-Location "app/client"
+#         docker build -t "${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest" .
 
-    - name: Build Server Docker image
-      shell: pwsh
-      run: |
-        Set-Location "app/server"
-        docker build -t "${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest" .
+#     - name: Build Server Docker image
+#       shell: pwsh
+#       run: |
+#         Set-Location "app/server"
+#         docker build -t "${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest" .
 
-    - name: Login to Docker Hub
-      shell: pwsh
-      run: |
-        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+#     - name: Login to Docker Hub
+#       shell: pwsh
+#       run: |
+#         echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-    - name: Push Docker images to Docker Hub
-      shell: pwsh
-      run: |
-        docker push "${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest"
-        docker push "${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest"
+#     - name: Push Docker images to Docker Hub
+#       shell: pwsh
+#       run: |
+#         docker push "${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest"
+#         docker push "${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest"
 
-    - name: Update deployment image references
-      shell: pwsh
-      run: |
-        $path = "app/deployment.yaml"
-        (Get-Content $path) -replace "exenyx7/mern-ecommerce-client:latest", "${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest" `
-                            -replace "exenyx7/mern-ecommerce-server:latest", "${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest" `
-        | Set-Content $path
+#     - name: Update deployment image references
+#       shell: pwsh
+#       run: |
+#         $path = "app/deployment.yaml"
+#         (Get-Content $path) -replace "exenyx7/mern-ecommerce-client:latest", "${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest" `
+#                             -replace "exenyx7/mern-ecommerce-server:latest", "${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest" `
+#         | Set-Content $path
 
-    - name: Deploy to Minikube
-      shell: pwsh
-      run: |
-        Set-Location "app"
-        kubectl apply -f namespace.yaml
-        kubectl apply -f deployment.yaml
-        kubectl apply -f service.yaml
+#     - name: Deploy to Minikube
+#       shell: pwsh
+#       run: |
+#         Set-Location "app"
+#         kubectl apply -f namespace.yaml
+#         kubectl apply -f deployment.yaml
+#         kubectl apply -f service.yaml
 
-    - name: Verify deployment
-      shell: pwsh
-      run: |
-        Write-Host "Waiting for deployments to be ready..."
-        kubectl wait --for=condition=available --timeout=300s deployment/client -n mern-ecommerce-ns
-        kubectl wait --for=condition=available --timeout=300s deployment/server -n mern-ecommerce-ns
-        kubectl wait --for=condition=available --timeout=300s deployment/mongodb -n mern-ecommerce-ns
+#     - name: Verify deployment
+#       shell: pwsh
+#       run: |
+#         Write-Host "Waiting for deployments to be ready..."
+#         kubectl wait --for=condition=available --timeout=300s deployment/client -n mern-ecommerce-ns
+#         kubectl wait --for=condition=available --timeout=300s deployment/server -n mern-ecommerce-ns
+#         kubectl wait --for=condition=available --timeout=300s deployment/mongodb -n mern-ecommerce-ns
 
-        Write-Host "Displaying all resources in namespace:"
-        kubectl get all -n mern-ecommerce-ns
+#         Write-Host "Displaying all resources in namespace:"
+#         kubectl get all -n mern-ecommerce-ns
 
-        Write-Host "Getting application URL:"
-        $NodePort = kubectl get service client-service -n mern-ecommerce-ns -o jsonpath="{.spec.ports[0].nodePort}"
-        $MinikubeIP = minikube ip
-        Write-Host "Application is available at: http://$MinikubeIP`:$NodePort"
+#         Write-Host "Getting application URL:"
+#         $NodePort = kubectl get service client-service -n mern-ecommerce-ns -o jsonpath="{.spec.ports[0].nodePort}"
+#         $MinikubeIP = minikube ip
+#         Write-Host "Application is available at: http://$MinikubeIP`:$NodePort"
