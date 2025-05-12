@@ -14,9 +14,10 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Set up Docker to use Minikube's environment
+      shell: bash
       run: |
         echo "Configuring Docker to use Minikube's daemon..."
-        eval $(minikube docker-env)
+        eval $("C:/Program Files/Kubernetes/Minikube/minikube.exe" docker-env --shell=bash)
 
     - name: Build Client Docker image
       run: |
@@ -37,6 +38,7 @@ jobs:
         docker push ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest
 
     - name: Update deployment image
+      shell: bash
       run: |
         # Update deployment.yaml with the Docker Hub username
         cd app
@@ -51,6 +53,7 @@ jobs:
         kubectl apply -f service.yaml
 
     - name: Verify deployment
+      shell: powershell
       run: |
         echo "Waiting for deployments to be ready..."
         kubectl wait --for=condition=available --timeout=300s deployment/client -n mern-ecommerce-ns
@@ -60,5 +63,12 @@ jobs:
         echo "Displaying all resources in namespace:"
         kubectl get all -n mern-ecommerce-ns
         
-        echo "Application URL:"
-        minikube service client-service -n mern-ecommerce-ns --url
+        echo "Getting application URL..."
+        # Get the NodePort directly instead of using minikube service command
+        $NODE_PORT = kubectl get service client-service -n mern-ecommerce-ns -o jsonpath="{.spec.ports[0].nodePort}"
+        $MINIKUBE_IP = (& "C:/Program Files/Kubernetes/Minikube/minikube.exe" ip)
+        echo "Application is available at: http://${MINIKUBE_IP}:${NODE_PORT}"
+        
+        # Set up port forwarding as fallback
+        echo "Setting up port forwarding to access application at http://localhost:8080"
+        Start-Process -NoNewWindow powershell -ArgumentList "kubectl port-forward service/client-service 8080:80 -n mern-ecommerce-ns"
