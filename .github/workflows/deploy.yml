@@ -10,6 +10,11 @@ jobs:
     runs-on: self-hosted
 
     steps:
+    - name: Set PowerShell execution policy
+      shell: powershell
+      run: |
+        Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
     - name: Checkout code
       uses: actions/checkout@v3
 
@@ -43,9 +48,7 @@ jobs:
       shell: powershell
       run: |
         $password = "${{ secrets.DOCKER_PASSWORD }}"
-        $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
-        $cred = New-Object System.Management.Automation.PSCredential ("${{ secrets.DOCKER_USERNAME }}", $securePassword)
-        docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin <<< $password
+        docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "$password"
 
     - name: Push Docker images to Docker Hub
       shell: powershell
@@ -80,7 +83,7 @@ jobs:
         echo "Displaying all resources in namespace:"
         kubectl get all -n mern-ecommerce-ns
         
-        echo "Getting application URL..."
+        echo "Getting application URL:"
         $NodePort = (kubectl get service client-service -n mern-ecommerce-ns -o jsonpath="{.spec.ports[0].nodePort}")
         $MinikubeIP = (minikube ip)
         echo "Application is available at: http://${MinikubeIP}:${NodePort}"
