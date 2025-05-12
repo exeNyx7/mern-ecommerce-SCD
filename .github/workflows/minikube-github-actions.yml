@@ -1,37 +1,37 @@
-name: Kubernetes Lab 13 - Minikube
+# name: Kubernetes Lab 13 - Minikube
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+# on:
+#   push:
+#     branches:
+#       - main
+#   workflow_dispatch:
 
-jobs:
-  minikube-setup:
-    runs-on: windows-latest
+# jobs:
+#   minikube-setup:
+#     runs-on: windows-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
 
-      - name: Install Minikube
-        run: choco install minikube -y
+#       - name: Install Minikube
+#         run: choco install minikube -y
 
-      - name: Start Minikube
-        run: |
-          minikube start --driver=docker
-          minikube status
+#       - name: Start Minikube
+#         run: |
+#           minikube start --driver=docker
+#           minikube status
 
-      - name: Use Minikube's Docker daemon
-        run: |
-          & minikube -p minikube docker-env | Invoke-Expression
-          docker info
+#       - name: Use Minikube's Docker daemon
+#         run: |
+#           & minikube -p minikube docker-env | Invoke-Expression
+#           docker info
 
-      - name: Deploy to Minikube (example)
-        run: |
-          kubectl create deployment hello-minikube --image=kicbase/echo-server:1.0
-          kubectl expose deployment hello-minikube --type=NodePort --port=8080
-          kubectl get services hello-minikube
+#       - name: Deploy to Minikube (example)
+#         run: |
+#           kubectl create deployment hello-minikube --image=kicbase/echo-server:1.0
+#           kubectl expose deployment hello-minikube --type=NodePort --port=8080
+#           kubectl get services hello-minikube
 
-      - name: Show Minikube Service URL
-        run: minikube service hello-minikube --url
+#       - name: Show Minikube Service URL
+#         run: minikube service hello-minikube --url
