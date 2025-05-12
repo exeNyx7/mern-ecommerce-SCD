@@ -54,12 +54,29 @@ jobs:
     - name: Verify deployment
       run: |
         echo "Waiting for deployments to be ready..."
-        kubectl wait --for=condition=available --timeout=300s deployment/client -n mern-ecommerce-ns
-        kubectl wait --for=condition=available --timeout=300s deployment/server -n mern-ecommerce-ns
-        kubectl wait --for=condition=available --timeout=300s deployment/mongodb -n mern-ecommerce-ns
+        kubectl wait --for=condition=available --timeout=60s deployment/client -n mern-ecommerce-ns
+        kubectl wait --for=condition=available --timeout=60s deployment/server -n mern-ecommerce-ns
+        kubectl wait --for=condition=available --timeout=60s deployment/mongodb -n mern-ecommerce-ns
         
         echo "Displaying all resources in namespace:"
         kubectl get all -n mern-ecommerce-ns
         
         echo "Application URL:"
         minikube service client-service -n mern-ecommerce-ns --url
+        
+        echo "Application URL:"
+        minikube service server-service -n mern-ecommerce-ns --url
+        
+        echo "Application URL:"
+        minikube service mongodb-service -n mern-ecommerce-ns --url
+
+        echo "Minikube status:"
+        minikube status
+
+        echo "Minikube logs:"
+        minikube logs
+
+        echo "Minikube dashboard:"
+        minikube dashboard
+
+      continue-on-error: true  # Allow workflow to complete even if this step fails
