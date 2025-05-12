@@ -61,15 +61,26 @@ jobs:
         echo "Displaying all resources in namespace:"
         kubectl get all -n mern-ecommerce-ns
         
-        echo "Application URL (use this in your browser):"
-        echo "http://$(minikube ip):30007"
+        echo "----------------------------------------"
+        echo "ACCESS OPTIONS:"
+        echo "1. Run this command in a separate terminal to create a tunnel:"
+        echo "   minikube service client-service -n mern-ecommerce-ns"
+        echo ""
+        echo "2. Or set up port forwarding:"
+        echo "   kubectl port-forward service/client-service 8080:80 -n mern-ecommerce-ns"
+        echo "   Then access: http://localhost:8080"
+        echo "----------------------------------------"
     
-        # Display direct NodePort URL instead of starting a tunnel
-        echo "Service is available at NodePort 30007"
+        # Just get URL but don't create tunnel
+        minikube service client-service -n mern-ecommerce-ns --url || true
 
         echo "Minikube status:"
         minikube status
 
+        echo "Minikube logs:"
+        minikube logs
 
+        echo "Minikube dashboard:"
+        minikube dashboard
 
       continue-on-error: true  # Allow workflow to complete even if this step fails
