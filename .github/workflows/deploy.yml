@@ -70,16 +70,11 @@ jobs:
         echo "   kubectl port-forward service/client-service 8080:80 -n mern-ecommerce-ns"
         echo "   Then access: http://localhost:8080"
         echo "----------------------------------------"
-    
+
 
 
         echo "Minikube status:"
         minikube status
 
-        echo "Minikube logs:"
-        minikube logs
-
-        echo "Minikube dashboard:"
-        minikube dashboard
 
       continue-on-error: true  # Allow workflow to complete even if this step fails
