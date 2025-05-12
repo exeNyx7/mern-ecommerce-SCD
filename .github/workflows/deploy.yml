@@ -71,8 +71,7 @@ jobs:
         echo "   Then access: http://localhost:8080"
         echo "----------------------------------------"
     
-        # Just get URL but don't create tunnel
-        minikube service client-service -n mern-ecommerce-ns --url || true
+
 
         echo "Minikube status:"
         minikube status
