@@ -1,87 +1,87 @@
-name: Build & Deploy to Minikube
+# name: Build & Deploy to Minikube
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+# on:
+#   push:
+#     branches:
+#       - main
+#   workflow_dispatch:
 
-jobs:
-  build-and-deploy:
-    runs-on: windows-latest
+# jobs:
+#   build-and-deploy:
+#     runs-on: windows-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
 
-      # 1) Install or upgrade Minikube
-      - name: Ensure Minikube is installed
-        shell: pwsh
-        run: |
-          if (-not (Get-Command minikube -ErrorAction SilentlyContinue)) {
-            choco install minikube -y
-          } else {
-            choco upgrade minikube -y
-          }
+#       # 1) Install or upgrade Minikube
+#       - name: Ensure Minikube is installed
+#         shell: pwsh
+#         run: |
+#           if (-not (Get-Command minikube -ErrorAction SilentlyContinue)) {
+#             choco install minikube -y
+#           } else {
+#             choco upgrade minikube -y
+#           }
 
-      # 2) Start Minikube
-      - name: Start Minikube cluster
-        shell: pwsh
-        run: |
-          Write-Host "→ Starting Minikube (Docker driver)..."
-          minikube delete --all || true
-          minikube start --driver=docker
-          minikube status
+#       # 2) Start Minikube
+#       - name: Start Minikube cluster
+#         shell: pwsh
+#         run: |
+#           Write-Host "→ Starting Minikube (Docker driver)..."
+#           minikube delete --all || true
+#           minikube start --driver=docker
+#           minikube status
 
-      # 3) Configure Docker
-      - name: Point Docker at Minikube’s daemon
-        shell: pwsh
-        run: |
-          $script = & minikube docker-env -p minikube --shell powershell
-          if (-not $script) {
-            Write-Error "minikube docker-env returned nothing"
-            exit 1
-          }
-          Invoke-Expression $script
+#       # 3) Configure Docker
+#       - name: Point Docker at Minikube’s daemon
+#         shell: pwsh
+#         run: |
+#           $script = & minikube docker-env -p minikube --shell powershell
+#           if (-not $script) {
+#             Write-Error "minikube docker-env returned nothing"
+#             exit 1
+#           }
+#           Invoke-Expression $script
 
-      # 4) Build & Push
-      - name: Build Client image
-        shell: pwsh
-        run: |
-          cd app/client
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest .
+#       # 4) Build & Push
+#       - name: Build Client image
+#         shell: pwsh
+#         run: |
+#           cd app/client
+#           docker build -t ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest .
 
-      - name: Build Server image
-        shell: pwsh
-        run: |
-          cd app/server
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest .
+#       - name: Build Server image
+#         shell: pwsh
+#         run: |
+#           cd app/server
+#           docker build -t ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest .
 
-      - name: Login to Docker Hub
-        shell: pwsh
-        run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+#       - name: Login to Docker Hub
+#         shell: pwsh
+#         run: |
+#           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Push images
-        shell: pwsh
-        run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest
+#       - name: Push images
+#         shell: pwsh
+#         run: |
+#           docker push ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest
+#           docker push ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest
 
-      # 5) Deploy to Minikube
-      - name: Apply Kubernetes manifests
-        shell: pwsh
-        run: |
-          cd app
-          kubectl apply -f namespace.yaml
-          kubectl apply -f deployment.yaml
-          kubectl apply -f service.yaml
+#       # 5) Deploy to Minikube
+#       - name: Apply Kubernetes manifests
+#         shell: pwsh
+#         run: |
+#           cd app
+#           kubectl apply -f namespace.yaml
+#           kubectl apply -f deployment.yaml
+#           kubectl apply -f service.yaml
 
-      - name: Verify deployment
-        shell: pwsh
-        run: |
-          kubectl wait --for=condition=available --timeout=180s deployment/client -n mern-ecommerce-ns
-          kubectl get all -n mern-ecommerce-ns
-          $port = kubectl get svc client-service -n mern-ecommerce-ns -o jsonpath="{.spec.ports[0].nodePort}"
-          $ip   = minikube ip
-          Write-Host "App should be at http://$ip`:$port"
+#       - name: Verify deployment
+#         shell: pwsh
+#         run: |
+#           kubectl wait --for=condition=available --timeout=180s deployment/client -n mern-ecommerce-ns
+#           kubectl get all -n mern-ecommerce-ns
+#           $port = kubectl get svc client-service -n mern-ecommerce-ns -o jsonpath="{.spec.ports[0].nodePort}"
+#           $ip   = minikube ip
+#           Write-Host "App should be at http://$ip`:$port"
