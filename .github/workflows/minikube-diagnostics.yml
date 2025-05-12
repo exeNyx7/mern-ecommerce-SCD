@@ -1,109 +1,26 @@
-name: Minikube Diagnostics
+- name: Check Minikube status
+  shell: pwsh
+  run: |
+    Write-Host "Checking Minikube cluster status..."
+    $status = & minikube status -p minikube
+    Write-Host "=== Minikube Status ===`n$status"
 
-on:
-  workflow_dispatch:
-  push:
-    branches: [ main ]
+    if ($status -notmatch "host: Running") {
+      Write-Error "❌ Minikube is not running. Please start the cluster first."
+      exit 1
+    }
 
-jobs:
-  diagnose-minikube:
-    runs-on: self-hosted
-    name: Run Minikube Environment Diagnostics
+- name: Set up Docker to use Minikube's environment
+  shell: pwsh
+  run: |
+    Write-Host "Configuring Docker to use Minikube's Docker daemon..."
 
-    steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+    $envScript = & minikube docker-env -p minikube --shell powershell
 
-    - name: Dump PATH
-      shell: pwsh
-      run: |
-        Write-Host "=== PATH entries ==="
-        $env:PATH -split ';' | ForEach-Object { Write-Host "  $_" }
+    if (-not $envScript) {
+      Write-Error "❌ minikube docker-env returned nothing. Check if the cluster is running."
+      exit 1
+    }
 
-    - name: Where is minikube?
-      shell: pwsh
-      run: |
-        Write-Host "=== where minikube ==="
-        try { where minikube | ForEach-Object { Write-Host "  $_" } }
-        catch { Write-Host "  not found in PATH" }
-
-    - name: Get-Command minikube details
-      shell: pwsh
-      run: |
-        Write-Host "=== Get-Command minikube ==="
-        try { Get-Command minikube | Format-List * }
-        catch { Write-Host "  Get-Command found nothing" }
-
-    - name: Test `minikube status`
-      shell: pwsh
-      run: |
-        Write-Host "=== minikube status ==="
-        & minikube status
-
-    - name: View Minikube config
-      shell: pwsh
-      run: |
-        Write-Host "=== minikube config view ==="
-        & minikube config view
-
-    - name: Show vm-driver setting
-      shell: pwsh
-      run: |
-        Write-Host "=== minikube config get vm-driver ==="
-        & minikube config get vm-driver
-
-    - name: Test `docker-env` (standard flags)
-      shell: pwsh
-      run: |
-        Write-Host "=== minikube docker-env -p minikube --shell powershell ==="
-        & minikube docker-env -p minikube --shell powershell
-
-    - name: Test `docker-env` (reversed flags)
-      shell: pwsh
-      run: |
-        Write-Host "=== minikube -p minikube docker-env --shell powershell ==="
-        & minikube -p minikube docker-env --shell powershell
-
-    - name: Test Get-Command–based invocation
-      shell: pwsh
-      run: |
-        Write-Host "=== Invoking via (Get-Command).Source ==="
-        $exe = (Get-Command minikube).Source
-        if (-not $exe) {
-          Write-Host "  ERROR: No executable path returned"
-        } else {
-          Write-Host "  Executable at: $exe"
-          & $exe docker-env -p minikube --shell powershell
-        }
-
-    - name: Test Invoke-Expression wrapper
-      shell: pwsh
-      run: |
-        Write-Host "=== Testing Invoke-Expression wrapper ==="
-        $envScript = & (Get-Command minikube).Source docker-env -p minikube --shell powershell
-        if ($envScript) {
-          Write-Host "  Script output:`n$envScript"
-        } else {
-          Write-Host "  No output (null) from docker-env call"
-        }
-
-    - name: Test Bash availability
-      shell: bash
-      run: |
-        echo "=== Bash version/info ==="
-        if command -v bash >/dev/null 2>&1; then
-          bash --version
-        else
-          echo "bash not found"
-        fi
-
-    - name: Test CMD fallback
-      shell: cmd
-      run: |
-        echo === CMD: where minikube ===
-        where minikube || echo not found
-
-    - name: Final diagnostics summary
-      shell: pwsh
-      run: |
-        Write-Host "Diagnostics complete. Review the logs above to see where minikube is missing, mis-invoked, or blocked."
+    Invoke-Expression $envScript
+    Write-Host "✅ Docker now points to Minikube's Docker daemon."
