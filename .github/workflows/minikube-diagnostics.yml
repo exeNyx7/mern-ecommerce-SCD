@@ -1,26 +1,33 @@
-- name: Check Minikube status
-  shell: pwsh
-  run: |
-    Write-Host "Checking Minikube cluster status..."
-    $status = & minikube status -p minikube
-    Write-Host "=== Minikube Status ===`n$status"
+jobs:
+  minikube-setup:
+    runs-on: windows-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
 
-    if ($status -notmatch "host: Running") {
-      Write-Error "❌ Minikube is not running. Please start the cluster first."
-      exit 1
-    }
+      - name: Check Minikube status
+        shell: pwsh
+        run: |
+          Write-Host "Checking Minikube cluster status..."
+          $status = & minikube status -p minikube
+          Write-Host "=== Minikube Status ===`n$status"
 
-- name: Set up Docker to use Minikube's environment
-  shell: pwsh
-  run: |
-    Write-Host "Configuring Docker to use Minikube's Docker daemon..."
+          if ($status -notmatch "host: Running") {
+            Write-Error "❌ Minikube is not running. Please start the cluster first."
+            exit 1
+          }
 
-    $envScript = & minikube docker-env -p minikube --shell powershell
+      - name: Set Docker to use Minikube's environment
+        shell: pwsh
+        run: |
+          Write-Host "Configuring Docker to use Minikube's Docker daemon..."
 
-    if (-not $envScript) {
-      Write-Error "❌ minikube docker-env returned nothing. Check if the cluster is running."
-      exit 1
-    }
+          $envScript = & minikube docker-env -p minikube --shell powershell
 
-    Invoke-Expression $envScript
-    Write-Host "✅ Docker now points to Minikube's Docker daemon."
+          if (-not $envScript) {
+            Write-Error "❌ minikube docker-env returned nothing. Check if the cluster is running and Docker is installed."
+            exit 1
+          }
+
+          Invoke-Expression $envScript
+          Write-Host "✅ Docker now points to Minikube's Docker daemon."
