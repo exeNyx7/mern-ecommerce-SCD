@@ -14,38 +14,55 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Set up Docker to use Minikube's environment
-      shell: bash
+      shell: powershell
       run: |
         echo "Configuring Docker to use Minikube's daemon..."
-        eval $("C:/Program Files/Kubernetes/Minikube/minikube.exe" docker-env --shell=bash)
+        # Get Minikube Docker environment variables and execute them in PowerShell
+        minikube docker-env | Foreach-Object {
+          if ($_ -match '^\s*export (.+?)=(.+)$') {
+            $var = $Matches[1]
+            $value = $Matches[2].Trim('"')
+            echo "Setting $var=$value"
+            [Environment]::SetEnvironmentVariable($var, $value)
+          }
+        }
 
     - name: Build Client Docker image
+      shell: powershell
       run: |
         cd app/client
         docker build -t ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest .
 
     - name: Build Server Docker image
+      shell: powershell
       run: |
         cd app/server
         docker build -t ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest .
 
     - name: Login to Docker Hub
-      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      shell: powershell
+      run: |
+        $password = "${{ secrets.DOCKER_PASSWORD }}"
+        $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+        $cred = New-Object System.Management.Automation.PSCredential ("${{ secrets.DOCKER_USERNAME }}", $securePassword)
+        docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin <<< $password
 
     - name: Push Docker images to Docker Hub
+      shell: powershell
       run: |
         docker push ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest
         docker push ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest
 
     - name: Update deployment image
-      shell: bash
+      shell: powershell
       run: |
         # Update deployment.yaml with the Docker Hub username
         cd app
-        sed -i "s|exenyx7/mern-ecommerce-client:latest|${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest|g" deployment.yaml
-        sed -i "s|exenyx7/mern-ecommerce-server:latest|${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest|g" deployment.yaml
+        (Get-Content -Path deployment.yaml) -replace 'exenyx7/mern-ecommerce-client:latest', '${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest' | Set-Content -Path deployment.yaml
+        (Get-Content -Path deployment.yaml) -replace 'exenyx7/mern-ecommerce-server:latest', '${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest' | Set-Content -Path deployment.yaml
 
     - name: Deploy to Minikube
+      shell: powershell
       run: |
         cd app
         kubectl apply -f namespace.yaml
@@ -64,11 +81,6 @@ jobs:
         kubectl get all -n mern-ecommerce-ns
         
         echo "Getting application URL..."
-        # Get the NodePort directly instead of using minikube service command
-        $NODE_PORT = kubectl get service client-service -n mern-ecommerce-ns -o jsonpath="{.spec.ports[0].nodePort}"
-        $MINIKUBE_IP = (& "C:/Program Files/Kubernetes/Minikube/minikube.exe" ip)
-        echo "Application is available at: http://${MINIKUBE_IP}:${NODE_PORT}"
-        
-        # Set up port forwarding as fallback
-        echo "Setting up port forwarding to access application at http://localhost:8080"
-        Start-Process -NoNewWindow powershell -ArgumentList "kubectl port-forward service/client-service 8080:80 -n mern-ecommerce-ns"
+        $NodePort = (kubectl get service client-service -n mern-ecommerce-ns -o jsonpath="{.spec.ports[0].nodePort}")
+        $MinikubeIP = (minikube ip)
+        echo "Application is available at: http://${MinikubeIP}:${NodePort}"
