@@ -10,62 +10,48 @@ jobs:
     runs-on: self-hosted
 
     steps:
-    - name: Set PowerShell execution policy
-      shell: powershell
-      run: |
-        Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-
     - name: Checkout code
       uses: actions/checkout@v3
 
     - name: Set up Docker to use Minikube's environment
-      shell: powershell
+      shell: bash
       run: |
         echo "Configuring Docker to use Minikube's daemon..."
-        # Get Minikube Docker environment variables and execute them in PowerShell
-        minikube docker-env | Foreach-Object {
-          if ($_ -match '^\s*export (.+?)=(.+)$') {
-            $var = $Matches[1]
-            $value = $Matches[2].Trim('"')
-            echo "Setting $var=$value"
-            [Environment]::SetEnvironmentVariable($var, $value)
-          }
-        }
+        eval $(minikube docker-env)
 
     - name: Build Client Docker image
-      shell: powershell
+      shell: bash
       run: |
         cd app/client
         docker build -t ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest .
 
     - name: Build Server Docker image
-      shell: powershell
+      shell: bash
       run: |
         cd app/server
         docker build -t ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest .
 
     - name: Login to Docker Hub
-      shell: powershell
+      shell: bash
       run: |
-        $password = "${{ secrets.DOCKER_PASSWORD }}"
-        docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "$password"
+        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
     - name: Push Docker images to Docker Hub
-      shell: powershell
+      shell: bash
       run: |
         docker push ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest
         docker push ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest
 
     - name: Update deployment image
-      shell: powershell
+      shell: bash
       run: |
-        # Update deployment.yaml with the Docker Hub username
+        # Update deployment.yaml with the Docker Hub username dynamically
         cd app
-        (Get-Content -Path deployment.yaml) -replace 'exenyx7/mern-ecommerce-client:latest', '${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest' | Set-Content -Path deployment.yaml
-        (Get-Content -Path deployment.yaml) -replace 'exenyx7/mern-ecommerce-server:latest', '${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest' | Set-Content -Path deployment.yaml
+        sed -i "s|exenyx7/mern-ecommerce-client:latest|${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest|g" deployment.yaml
+        sed -i "s|exenyx7/mern-ecommerce-server:latest|${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest|g" deployment.yaml
 
     - name: Deploy to Minikube
-      shell: powershell
+      shell: bash
       run: |
         cd app
         kubectl apply -f namespace.yaml
@@ -73,7 +59,7 @@ jobs:
         kubectl apply -f service.yaml
 
     - name: Verify deployment
-      shell: powershell
+      shell: bash
       run: |
         echo "Waiting for deployments to be ready..."
         kubectl wait --for=condition=available --timeout=300s deployment/client -n mern-ecommerce-ns
@@ -84,6 +70,6 @@ jobs:
         kubectl get all -n mern-ecommerce-ns
         
         echo "Getting application URL:"
-        $NodePort = (kubectl get service client-service -n mern-ecommerce-ns -o jsonpath="{.spec.ports[0].nodePort}")
-        $MinikubeIP = (minikube ip)
+        NodePort=$(kubectl get service client-service -n mern-ecommerce-ns -o jsonpath="{.spec.ports[0].nodePort}")
+        MinikubeIP=$(minikube ip)
         echo "Application is available at: http://${MinikubeIP}:${NodePort}"
