@@ -62,13 +62,13 @@ jobs:
         kubectl get all -n mern-ecommerce-ns
         
         echo "Application URL:"
-        minikube service client-service -n mern-ecommerce-ns --url
+        minikube service client-service -n mern-ecommerce-ns
         
         echo "Application URL:"
-        minikube service server-service -n mern-ecommerce-ns --url
+        minikube service server-service -n mern-ecommerce-ns
         
         echo "Application URL:"
-        minikube service mongodb-service -n mern-ecommerce-ns --url
+        minikube service mongodb-service -n mern-ecommerce-ns
 
         echo "Minikube status:"
         minikube status
