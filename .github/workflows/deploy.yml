@@ -17,7 +17,8 @@ jobs:
       shell: pwsh
       run: |
         Write-Host "Configuring Docker to use Minikube's daemon..."
-        & minikube -p minikube docker-env --shell powershell | Invoke-Expression
+        $envScript = & (Get-Command minikube).Source -p minikube docker-env --shell powershell
+        Invoke-Expression $envScript
 
     - name: Build Client Docker image
       shell: pwsh
