@@ -1,4 +1,4 @@
-name: Build and Deploy to Minikub
+name: Build and Deploy to Minikube
 
 on:
   push:
@@ -8,68 +8,36 @@ on:
 jobs:
   build-deploy:
     runs-on: self-hosted
-
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
-
+    
     - name: Set up Docker to use Minikube's environment
-      shell: bash
       run: |
         echo "Configuring Docker to use Minikube's daemon..."
         eval $(minikube docker-env)
-
-    - name: Build Client Docker image
-      shell: bash
+    
+    - name: Build client Docker image
       run: |
-        cd app/client
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest .
-
-    - name: Build Server Docker image
-      shell: bash
+        docker build -t exenyx7/mern-ecommerce-client:latest ./client
+    
+    - name: Build server Docker image
       run: |
-        cd app/server
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest .
-
+        docker build -t exenyx7/mern-ecommerce-server:latest ./server
+    
     - name: Login to Docker Hub
-      shell: bash
-      run: |
-        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-    - name: Push Docker images to Docker Hub
-      shell: bash
-      run: |
-        docker push ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest
-        docker push ${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest
-
-    - name: Update deployment image
-      shell: bash
-      run: |
-        # Update deployment.yaml with the Docker Hub username dynamically
-        cd app
-        sed -i "s|exenyx7/mern-ecommerce-client:latest|${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest|g" deployment.yaml
-        sed -i "s|exenyx7/mern-ecommerce-server:latest|${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest|g" deployment.yaml
-
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+    
+    - name: Push client Docker image to Docker Hub
+      run: docker push exenyx7/mern-ecommerce-client:latest
+    
+    - name: Push server Docker image to Docker Hub
+      run: docker push exenyx7/mern-ecommerce-server:latest
+    
     - name: Deploy to Minikube
-      shell: bash
       run: |
-        cd app
         kubectl apply -f namespace.yaml
-        kubectl apply -f deployment.yaml
-        kubectl apply -f service.yaml
-
-    - name: Verify deployment
-      shell: bash
-      run: |
-        echo "Waiting for deployments to be ready..."
-        kubectl wait --for=condition=available --timeout=300s deployment/client -n mern-ecommerce-ns
-        kubectl wait --for=condition=available --timeout=300s deployment/server -n mern-ecommerce-ns
-        kubectl wait --for=condition=available --timeout=300s deployment/mongodb -n mern-ecommerce-ns
-        
-        echo "Displaying all resources in namespace:"
-        kubectl get all -n mern-ecommerce-ns
-        
-        echo "Getting application URL:"
-        NodePort=$(kubectl get service client-service -n mern-ecommerce-ns -o jsonpath="{.spec.ports[0].nodePort}")
-        MinikubeIP=$(minikube ip)
-        echo "Application is available at: http://${MinikubeIP}:${NodePort}"
+        kubectl apply -f mongodb-deployment.yaml
+        kubectl apply -f server-deployment.yaml
+        kubectl apply -f client-deployment.yaml
