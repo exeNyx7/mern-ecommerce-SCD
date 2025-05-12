@@ -1,67 +1,67 @@
-name: Minikube Diagnostic
+# name: Minikube Diagnostic
 
-on:
-  workflow_dispatch:  # Allows manual trigger from GitHub UI
-  push:               # Runs on every push to any branch
-    branches:
-      - main
-      - master
+# on:
+#   workflow_dispatch:  # Allows manual trigger from GitHub UI
+#   push:               # Runs on every push to any branch
+#     branches:
+#       - main
+#       - master
 
-jobs:
-  minikube-setup:
-    runs-on: windows-latest
+# jobs:
+#   minikube-setup:
+#     runs-on: windows-latest
 
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
+#     steps:
+#       - name: Check out code
+#         uses: actions/checkout@v3
 
-      - name: Verify Minikube is in PATH
-        shell: pwsh
-        run: |
-          Write-Host "=== PATH entries ==="
-          $env:Path -split ";" | ForEach-Object { Write-Host "  $_" }
+#       - name: Verify Minikube is in PATH
+#         shell: pwsh
+#         run: |
+#           Write-Host "=== PATH entries ==="
+#           $env:Path -split ";" | ForEach-Object { Write-Host "  $_" }
 
-          Write-Host "`n=== where minikube ==="
-          try {
-            where.exe minikube | ForEach-Object { Write-Host "  $_" }
-          } catch {
-            Write-Error "Minikube not found in PATH"
-            exit 1
-          }
+#           Write-Host "`n=== where minikube ==="
+#           try {
+#             where.exe minikube | ForEach-Object { Write-Host "  $_" }
+#           } catch {
+#             Write-Error "Minikube not found in PATH"
+#             exit 1
+#           }
 
-      - name: Get-Command minikube
-        shell: pwsh
-        run: |
-          Write-Host "=== Get-Command minikube ==="
-          try {
-            Get-Command minikube | Format-List * 
-          } catch {
-            Write-Error "Get-Command could not find minikube"
-            exit 1
-          }
+#       - name: Get-Command minikube
+#         shell: pwsh
+#         run: |
+#           Write-Host "=== Get-Command minikube ==="
+#           try {
+#             Get-Command minikube | Format-List * 
+#           } catch {
+#             Write-Error "Get-Command could not find minikube"
+#             exit 1
+#           }
 
-      - name: Check Minikube status
-        shell: pwsh
-        run: |
-          Write-Host "`n=== Minikube Status ==="
-          $status = & minikube status -p minikube
-          Write-Host "$status"
+#       - name: Check Minikube status
+#         shell: pwsh
+#         run: |
+#           Write-Host "`n=== Minikube Status ==="
+#           $status = & minikube status -p minikube
+#           Write-Host "$status"
 
-          if ($status -notmatch "host: Running") {
-            Write-Error "❌ Minikube is not running. Please start the cluster first."
-            exit 1
-          }
+#           if ($status -notmatch "host: Running") {
+#             Write-Error "❌ Minikube is not running. Please start the cluster first."
+#             exit 1
+#           }
 
-      - name: Configure Docker to use Minikube's Docker daemon
-        shell: pwsh
-        run: |
-          Write-Host "`n=== Configuring Docker environment ==="
-          $envScript = & minikube docker-env -p minikube --shell powershell
+#       - name: Configure Docker to use Minikube's Docker daemon
+#         shell: pwsh
+#         run: |
+#           Write-Host "`n=== Configuring Docker environment ==="
+#           $envScript = & minikube docker-env -p minikube --shell powershell
 
-          if (-not $envScript) {
-            Write-Error "❌ minikube docker-env returned nothing. Ensure Minikube is running and Docker is installed."
-            exit 1
-          }
+#           if (-not $envScript) {
+#             Write-Error "❌ minikube docker-env returned nothing. Ensure Minikube is running and Docker is installed."
+#             exit 1
+#           }
 
-          Invoke-Expression $envScript
-          Write-Host "✅ Docker now points to Minikube's Docker daemon."
+#           Invoke-Expression $envScript
+#           Write-Host "✅ Docker now points to Minikube's Docker daemon."
