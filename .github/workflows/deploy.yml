@@ -16,7 +16,8 @@ jobs:
     - name: Set up Docker to use Minikube's environment
       run: |
         echo "Configuring Docker to use Minikube's daemon..."
-        eval $(minikube docker-env)
+        # PowerShell version of minikube docker-env
+        & minikube -p minikube docker-env --shell powershell | Invoke-Expression
 
     - name: Build Client Docker image
       run: |
@@ -40,8 +41,8 @@ jobs:
       run: |
         # Update deployment.yaml with the Docker Hub username
         cd app
-        sed -i "s|exenyx7/mern-ecommerce-client:latest|${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest|g" deployment.yaml
-        sed -i "s|exenyx7/mern-ecommerce-server:latest|${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest|g" deployment.yaml
+        (Get-Content deployment.yaml) -replace 'exenyx7/mern-ecommerce-client:latest', '${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-client:latest' | Set-Content deployment.yaml
+        (Get-Content deployment.yaml) -replace 'exenyx7/mern-ecommerce-server:latest', '${{ secrets.DOCKER_USERNAME }}/mern-ecommerce-server:latest' | Set-Content deployment.yaml
 
     - name: Deploy to Minikube
       run: |
