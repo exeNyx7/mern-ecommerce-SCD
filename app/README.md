@@ -6,16 +6,16 @@ An ecommerce store built with MERN stack, and utilizes third party API's. This e
 
 1. Buyers browse the store categories, products and brands
 2. Sellers or Merchants manage their own brand component
-3. Admins manage and control the entire store components 
+3. Admins manage and control the entire store components
 
-### Features:
+### Features
 
-  * Node provides the backend environment for this application
-  * Express middleware is used to handle requests, routes
-  * Mongoose schemas to model the application data
-  * React for displaying UI components
-  * Redux to manage application's state
-  * Redux Thunk middleware to handle asynchronous redux actions
+* Node provides the backend environment for this application
+* Express middleware is used to handle requests, routes
+* Mongoose schemas to model the application data
+* React for displaying UI components
+* Redux to manage application's state
+* Redux Thunk middleware to handle asynchronous redux actions
 
 ## Demo
 
@@ -28,8 +28,9 @@ See admin dashboard [demo](https://mernstore-bucket.s3.us-east-2.amazonaws.com/a
 To run this project locally you can use docker compose provided in the repository. Here is a guide on how to run this project locally using docker compose.
 
 Clone the repository
+
 ```
-git clone https://github.com/mohamedsamara/mern-ecommerce.git
+git clone https://github.com/exeNyx7/mern-ecommerce-SCD.git
 ```
 
 Edit the dockercompose.yml file and update the the values for MONGO_URI and JWT_SECRET
@@ -45,7 +46,7 @@ docker-compose up
 
 * The seed command will create an admin user in the database
 * The email and password are passed with the command as arguments
-* Like below command, replace brackets with email and password. 
+* Like below command, replace brackets with email and password.
 * For more information, see code [here](server/utils/seed.js)
 
 ```
@@ -59,7 +60,7 @@ npm run seed:db [email-***@****.com] [password-******] // This is just an exampl
 Some basic Git commands are:
 
 ```
-git clone https://github.com/mohamedsamara/mern-ecommerce.git
+git clone https://github.com/exeNyx7/mern-ecommerce-SCD.git
 cd project
 npm install
 ```
@@ -71,7 +72,6 @@ Create `.env` file for both client and server. See examples:
 [Frontend ENV](client/.env.example)
 
 [Backend ENV](server/.env.example)
-
 
 ## Vercel Deployment
 
@@ -85,23 +85,22 @@ npm run dev
 
 ## Languages & tools
 
-- [Node](https://nodejs.org/en/)
+* [Node](https://nodejs.org/en/)
 
-- [Express](https://expressjs.com/)
+* [Express](https://expressjs.com/)
 
-- [Mongoose](https://mongoosejs.com/)
+* [Mongoose](https://mongoosejs.com/)
 
-- [React](https://reactjs.org/)
+* [React](https://reactjs.org/)
 
-- [Webpack](https://webpack.js.org/)
-
+* [Webpack](https://webpack.js.org/)
 
 ### Code Formatter
 
-- Add a `.vscode` directory
-- Create a file `settings.json` inside `.vscode`
-- Install Prettier - Code formatter in VSCode
-- Add the following snippet:  
+* Add a `.vscode` directory
+* Create a file `settings.json` inside `.vscode`
+* Install Prettier - Code formatter in VSCode
+* Add the following snippet:  
 
 ```json
 
@@ -115,4 +114,3 @@ npm run dev
     }
 
 ```
-
